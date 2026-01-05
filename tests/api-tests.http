@@ -1,0 +1,203 @@
+###
+# Teams & Departments API Tests
+# Requires VS Code REST Client extension
+# Or use with Thunder Client / Postman
+###
+
+@baseUrl = http://localhost:3000/api
+@adminEmail = admin@company.com
+@adminPassword = admin123
+@managerEmail = jean.dupont@company.com
+@managerPassword = jean123
+
+### 1. Login as Admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@adminToken = {{loginAdmin.response.body.token}}
+
+### 2. Login as Manager
+# @name loginManager
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{managerEmail}}",
+  "password": "{{managerPassword}}"
+}
+
+###
+@managerToken = {{loginManager.response.body.token}}
+
+### ========================================
+### TEAMS ENDPOINTS
+### ========================================
+
+### 3. Get All Teams
+GET {{baseUrl}}/teams
+Authorization: Bearer {{adminToken}}
+
+### 4. Get Teams by Department
+# @name getTeams
+GET {{baseUrl}}/teams?isActive=true
+Authorization: Bearer {{adminToken}}
+
+###
+@teamId = {{getTeams.response.body.data[0]._id}}
+
+### 5. Get Single Team
+GET {{baseUrl}}/teams/{{teamId}}
+Authorization: Bearer {{adminToken}}
+
+### 6. Get Team Members
+GET {{baseUrl}}/teams/{{teamId}}/members
+Authorization: Bearer {{adminToken}}
+
+### 7. Create New Team (Admin/Manager)
+# @name createTeam
+POST {{baseUrl}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "QA Team",
+  "description": "Quality Assurance and Testing",
+  "leader": "674841d6f0f4c5ed5c999a47",
+  "members": ["674841d6f0f4c5ed5c999a47"],
+  "color": "#9C27B0"
+}
+
+###
+@newTeamId = {{createTeam.response.body.data._id}}
+
+### 8. Update Team (Admin/Manager)
+PUT {{baseUrl}}/teams/{{newTeamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated description for QA Team",
+  "color": "#E91E63"
+}
+
+### 9. Add Member to Team (Admin/Manager)
+POST {{baseUrl}}/teams/{{teamId}}/members
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "674841d6f0f4c5ed5c999a49"
+}
+
+### 10. Remove Member from Team (Admin/Manager)
+DELETE {{baseUrl}}/teams/{{teamId}}/members/674841d6f0f4c5ed5c999a49
+Authorization: Bearer {{adminToken}}
+
+### 11. Delete Team (Admin only) - Soft Delete
+DELETE {{baseUrl}}/teams/{{newTeamId}}
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### DEPARTMENTS ENDPOINTS
+### ========================================
+
+### 12. Get All Departments
+# @name getDepartments
+GET {{baseUrl}}/departments
+Authorization: Bearer {{adminToken}}
+
+###
+@deptId = {{getDepartments.response.body.data[0]._id}}
+
+### 13. Get Single Department
+GET {{baseUrl}}/departments/{{deptId}}
+Authorization: Bearer {{adminToken}}
+
+### 14. Get Department Teams
+GET {{baseUrl}}/departments/{{deptId}}/teams
+Authorization: Bearer {{adminToken}}
+
+### 15. Get Department Stats
+GET {{baseUrl}}/departments/{{deptId}}/stats
+Authorization: Bearer {{adminToken}}
+
+### 16. Create New Department (Admin only)
+# @name createDept
+POST {{baseUrl}}/departments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Finance & Accounting",
+  "description": "Financial planning and accounting operations",
+  "manager": "674841d6f0f4c5ed5c999a47",
+  "location": "Building C, Floor 2",
+  "budget": 400000,
+  "color": "#00BCD4"
+}
+
+###
+@newDeptId = {{createDept.response.body.data._id}}
+
+### 17. Update Department (Admin/Manager)
+PUT {{baseUrl}}/departments/{{newDeptId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "budget": 450000,
+  "employeeCount": 4
+}
+
+### 18. Delete Department (Admin only) - Soft Delete
+DELETE {{baseUrl}}/departments/{{newDeptId}}
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### ERROR CASES
+### ========================================
+
+### 19. Try Create Team Without Auth (Should Fail)
+POST {{baseUrl}}/teams
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Team"
+}
+
+### 20. Try Delete Department as Manager (Should Fail)
+DELETE {{baseUrl}}/departments/{{deptId}}
+Authorization: Bearer {{managerToken}}
+
+### 21. Try Create with Invalid Data (Should Fail)
+POST {{baseUrl}}/teams
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "leader": "invalid-id"
+}
+
+### 22. Try Add Non-Existent Member (Should Fail)
+POST {{baseUrl}}/teams/{{teamId}}/members
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "000000000000000000000000"
+}
+
+### ========================================
+### HEALTH CHECK
+### ========================================
+
+### 23. Server Health
+GET http://localhost:3000/health
