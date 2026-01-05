@@ -143,7 +143,8 @@ socketHandler(io);
 
 // Start server
 const PORT = process.env.PORT || 3000;
-const HOST = '127.0.0.1';
+// On Render (and most cloud platforms), we should listen on 0.0.0.0 or let it default
+// const HOST = '127.0.0.1'; 
 
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
@@ -155,9 +156,9 @@ server.on('error', (error) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`✅ Server is listening on http://${HOST}:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`✅ Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`✅ Server is listening on port ${PORT}`);
   console.log(`✅ Health check: http://localhost:${PORT}/health`);
   
   // Verify the server is actually listening
