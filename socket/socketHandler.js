@@ -52,13 +52,9 @@ module.exports = (io) => {
      */
     socket.on('sendMessage', async (messageData) => {
       try {
-        const { senderId, receiverId, groupId, content } = messageData;
-
-        // Validate sender
-        if (!socket.userId || socket.userId !== senderId) {
-          socket.emit('error', { message: 'Unauthorized' });
-          return;
-        }
+        const { senderId, receiverId, groupId, content, senderName, timestamp } = messageData;
+        
+        console.log('📨 Received sendMessage:', { senderId, groupId, content, senderName });
 
         // Create message in database
         const message = await Message.create({
@@ -73,18 +69,21 @@ module.exports = (io) => {
         await message.populate('senderId', 'firstname lastname email');
 
         const messageResponse = {
-          id: message._id,
-          senderId: message.senderId,
-          receiverId: message.receiverId,
-          groupId: message.groupId,
+          id: message._id.toString(),
+          senderId: message.senderId._id.toString(),
+          senderName: senderName || `${message.senderId.firstname} ${message.senderId.lastname}`,
+          receiverId: message.receiverId?.toString() || null,
+          groupId: message.groupId?.toString() || null,
           content: message.content,
           status: message.status,
-          timestamp: message.timestamp
+          timestamp: message.timestamp || timestamp
         };
 
         if (groupId) {
-          // Emit to group room
+          // Emit to ALL clients in the group room (including sender for confirmation)
+          console.log(`📤 Broadcasting to room ${groupId}:`, messageResponse);
           io.to(groupId).emit('receiveMessage', messageResponse);
+          console.log(`✅ Message broadcasted to group ${groupId}`);
         } else {
           // Emit to recipient's personal room
           io.to(receiverId).emit('receiveMessage', messageResponse);
@@ -92,9 +91,9 @@ module.exports = (io) => {
           socket.emit('messageSent', messageResponse);
         }
 
-        console.log(`Message sent from ${senderId} to ${receiverId || groupId}`);
+        console.log(`✅ Message sent from ${senderId} to ${receiverId || groupId}`);
       } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('❌ Error sending message:', error);
         socket.emit('error', { message: 'Failed to send message' });
       }
     });
