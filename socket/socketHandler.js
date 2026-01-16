@@ -52,9 +52,9 @@ module.exports = (io) => {
      */
     socket.on('sendMessage', async (messageData) => {
       try {
-        const { senderId, receiverId, groupId, content, senderName, timestamp } = messageData;
+        const { senderId, receiverId, groupId, content, senderName, timestamp, fileUrl, fileName, fileType } = messageData;
         
-        console.log('📨 Received sendMessage:', { senderId, groupId, content, senderName });
+        console.log('📨 Received sendMessage:', { senderId, groupId, content, senderName, fileUrl, fileName });
 
         // Create message in database
         const message = await Message.create({
@@ -62,7 +62,10 @@ module.exports = (io) => {
           receiverId: groupId ? null : receiverId,
           groupId: groupId || null,
           content,
-          status: 'sent'
+          status: 'sent',
+          fileUrl: fileUrl || null,
+          fileName: fileName || null,
+          fileType: fileType || null
         });
 
         // Populate sender info
@@ -76,7 +79,10 @@ module.exports = (io) => {
           groupId: message.groupId?.toString() || null,
           content: message.content,
           status: message.status,
-          timestamp: message.timestamp || timestamp
+          timestamp: message.timestamp || timestamp,
+          fileUrl: message.fileUrl,
+          fileName: message.fileName,
+          fileType: message.fileType
         };
 
         if (groupId) {

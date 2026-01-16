@@ -36,6 +36,20 @@ const messageSchema = new mongoose.Schema({
     enum: ['sent', 'delivered', 'read'],
     default: 'sent'
   },
+  // File attachments
+  fileUrl: {
+    type: String,
+    default: null
+  },
+  fileName: {
+    type: String,
+    default: null
+  },
+  fileType: {
+    type: String,
+    enum: ['image', 'pdf', 'document', null],
+    default: null
+  },
   timestamp: {
     type: Date,
     default: Date.now

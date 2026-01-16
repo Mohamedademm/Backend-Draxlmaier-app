@@ -18,6 +18,7 @@ const departmentRoutes = require('./routes/departments');
 const busStopRoutes = require('./routes/busStopRoutes');
 const objectiveRoutes = require('./routes/objectiveRoutes');
 const matriculeRoutes = require('./routes/matriculeRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -77,6 +78,10 @@ app.use(morgan('dev')); // HTTP request logger
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
+// Servir les fichiers uploads statiquement
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Rate limiting
 app.use('/api/', rateLimiter);
 
@@ -101,6 +106,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/bus-stops', busStopRoutes);
 app.use('/api/objectives', objectiveRoutes);
 app.use('/api/matricules', matriculeRoutes);
+app.use('/api', uploadRoutes);
 
 // 404 Handler
 app.use((req, res) => {
