@@ -3,7 +3,20 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
 const { authenticate } = require('../middleware/auth');
+
+// Enable CORS for all upload routes
+router.use(cors({
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'Content-Type']
+}));
+
+// Handle OPTIONS preflight requests
+router.options('*', cors());
 
 // Créer le dossier uploads s'il n'existe pas
 const uploadsDir = path.join(__dirname, '..', 'uploads');
