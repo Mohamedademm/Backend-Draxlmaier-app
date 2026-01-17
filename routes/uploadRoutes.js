@@ -43,6 +43,12 @@ const storage = multer.diskStorage({
 
 // Validation des fichiers
 const fileFilter = (req, file, cb) => {
+  console.log('📝 File received:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size
+  });
+
   // Types de fichiers acceptés
   const allowedTypes = [
     'image/jpeg',
@@ -51,6 +57,11 @@ const fileFilter = (req, file, cb) => {
     'image/gif',
     'image/webp',
     'application/pdf',
+    'application/x-pdf',
+    'application/acrobat',
+    'applications/vnd.pdf',
+    'text/pdf',
+    'text/x-pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
@@ -61,7 +72,8 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Type de fichier non supporté. Types acceptés: images (JPEG, PNG, GIF, WebP), PDF, DOC, DOCX, XLS, XLSX, TXT'), false);
+    console.log('❌ File type rejected:', file.mimetype);
+    cb(new Error(`Type de fichier non supporté: ${file.mimetype}. Types acceptés: images (JPEG, PNG, GIF, WebP), PDF, DOC, DOCX, XLS, XLSX, TXT`), false);
   }
 };
 
@@ -75,11 +87,41 @@ const upload = multer({
 });
 
 // Endpoint d'upload
-router.post('/upload', authenticate, upload.single('file'), async (req, res) => {
+router.post('/upload', authenticate, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      // Erreur Multer
+      console.error('❌ Multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ 
+          success: false,
+          status: 'error',
+          message: 'Fichier trop volumineux. Taille maximale: 10 MB' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        status: 'error',
+        message: err.message 
+      });
+    } else if (err) {
+      // Erreur de validation de type de fichier
+      console.error('❌ File validation error:', err);
+      return res.status(400).json({ 
+        success: false,
+        status: 'error',
+        message: err.message 
+      });
+    }
+    // Pas d'erreur, continuer
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ 
         success: false,
+        status: 'error',
         error: 'Aucun fichier fourni' 
       });
     }
@@ -107,6 +149,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
     console.error('❌ Erreur upload:', error);
     res.status(500).json({ 
       success: false,
+      status: 'error',
       error: error.message 
     });
   }
