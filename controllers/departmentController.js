@@ -1,6 +1,7 @@
 const Department = require('../models/Department');
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Group = require('../models/Group');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -50,11 +51,11 @@ exports.getDepartment = catchAsync(async (req, res, next) => {
 
 /**
  * @route   POST /api/departments
- * @desc    Create new department
+ * @desc    Create new department with auto-generated group chat
  * @access  Private (Admin only)
  */
 exports.createDepartment = catchAsync(async (req, res, next) => {
-  const { name, description, manager, location, budget, color } = req.body;
+  const { name, description, manager, location, budget, color, code } = req.body;
 
   // Validate manager exists
   const managerUser = await User.findById(manager);
@@ -62,8 +63,10 @@ exports.createDepartment = catchAsync(async (req, res, next) => {
     return next(new AppError('Manager not found', 404));
   }
 
+  // Create department
   const department = await Department.create({
     name,
+    code,
     description,
     manager,
     location,
@@ -72,11 +75,35 @@ exports.createDepartment = catchAsync(async (req, res, next) => {
     createdBy: req.user._id
   });
 
+  // Auto-create group chat for the department
+  try {
+    const groupChat = await Group.create({
+      name: `${name} - Chat`,
+      description: `Groupe de chat du département ${name}`,
+      type: 'department',
+      department: name,
+      members: [manager, req.user._id], // Add manager and creator as initial members
+      admins: [manager, req.user._id], // Manager and creator are admins
+      createdBy: req.user._id,
+      isActive: true
+    });
+
+    // Link group chat to department
+    department.chatRoomId = groupChat._id;
+    await department.save();
+
+    console.log(`✅ Auto-created group chat ${groupChat._id} for department ${name}`);
+  } catch (groupError) {
+    console.error('❌ Failed to create group chat:', groupError);
+    // Continue even if group creation fails - department is still created
+  }
+
   await department.populate('manager', 'firstname lastname email role');
 
   res.status(201).json({
     status: 'success',
-    data: department
+    data: department,
+    message: 'Department and group chat created successfully'
   });
 });
 
@@ -122,7 +149,7 @@ exports.updateDepartment = catchAsync(async (req, res, next) => {
 
 /**
  * @route   DELETE /api/departments/:id
- * @desc    Delete department (soft delete)
+ * @desc    Delete department (soft delete) and deactivate associated group chat
  * @access  Private (Admin only)
  */
 exports.deleteDepartment = catchAsync(async (req, res, next) => {
@@ -142,13 +169,28 @@ exports.deleteDepartment = catchAsync(async (req, res, next) => {
     return next(new AppError(`Cannot delete department with ${activeTeams} active team(s)`, 400));
   }
 
+  // Deactivate associated group chat
+  if (department.chatRoomId) {
+    try {
+      await Group.findByIdAndUpdate(department.chatRoomId, {
+        isActive: false,
+        updatedAt: new Date()
+      });
+      console.log(`✅ Deactivated group chat ${department.chatRoomId} for department ${department.name}`);
+    } catch (groupError) {
+      console.error('❌ Failed to deactivate group chat:', groupError);
+      // Continue with department deletion even if group deactivation fails
+    }
+  }
+
+  // Soft delete department
   department.isActive = false;
   department.updatedBy = req.user._id;
   await department.save();
 
   res.status(200).json({
     status: 'success',
-    message: 'Department deleted successfully'
+    message: 'Department and associated group chat deleted successfully'
   });
 });
 
@@ -214,5 +256,36 @@ exports.getDepartmentStats = catchAsync(async (req, res, next) => {
         budget: department.budget
       }
     }
+  });
+});
+
+/**
+ * @route   GET /api/departments/:id/group
+ * @desc    Get department's group chat
+ * @access  Private
+ */
+exports.getDepartmentGroup = catchAsync(async (req, res, next) => {
+  const department = await Department.findById(req.params.id);
+  
+  if (!department) {
+    return next(new AppError('Department not found', 404));
+  }
+
+  if (!department.chatRoomId) {
+    return next(new AppError('This department does not have a group chat', 404));
+  }
+
+  const groupChat = await Group.findById(department.chatRoomId)
+    .populate('members', 'firstname lastname email profileImage')
+    .populate('admins', 'firstname lastname email')
+    .populate('createdBy', 'firstname lastname email');
+
+  if (!groupChat) {
+    return next(new AppError('Group chat not found', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: groupChat
   });
 });

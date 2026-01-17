@@ -40,4 +40,11 @@ router
   .route('/:id/stats')
   .get(departmentController.getDepartmentStats);
 
+/**
+ * @route   GET /api/departments/:id/group
+ */
+router
+  .route('/:id/group')
+  .get(departmentController.getDepartmentGroup);
+
 module.exports = router;
