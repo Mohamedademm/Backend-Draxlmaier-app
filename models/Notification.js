@@ -17,6 +17,15 @@ const notificationSchema = new mongoose.Schema({
     trim: true,
     maxlength: [1000, 'Message cannot exceed 1000 characters']
   },
+  type: {
+    type: String,
+    enum: ['general', 'address_change', 'department_update', 'system'],
+    default: 'general'
+  },
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

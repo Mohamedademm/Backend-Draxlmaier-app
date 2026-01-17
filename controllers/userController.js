@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+const detectAddressChange = require('../middleware/detectAddressChange');
 const mongoose = require('mongoose');
 
 /**
@@ -519,6 +521,9 @@ exports.updateProfile = async (req, res, next) => {
     const { firstname, lastname, phone, department, position, 
             address, city, postalCode, profileImageBase64 } = req.body;
 
+    // Détecter changement d'adresse AVANT la mise à jour
+    const addressChangeInfo = detectAddressChange(user, { address, city, postalCode });
+
     // Mise à jour des champs
     if (firstname) user.firstname = firstname;
     if (lastname) user.lastname = lastname;
@@ -537,6 +542,51 @@ exports.updateProfile = async (req, res, next) => {
     }
 
     await user.save();
+
+    // Si l'adresse a changé, notifier tous les admins
+    if (addressChangeInfo.hasChanged) {
+      try {
+        // Récupérer tous les admins
+        const admins = await User.find({ role: 'admin', active: true });
+        const adminIds = admins.map(admin => admin._id);
+
+        if (adminIds.length > 0) {
+          // Créer la notification
+          const notification = await Notification.create({
+            title: '📍 Changement d\'adresse',
+            message: `${user.firstname} ${user.lastname} a modifié son adresse:\n` +
+                     `Ancienne: ${addressChangeInfo.oldAddress.address || 'Non renseignée'}, ${addressChangeInfo.oldAddress.city || ''} ${addressChangeInfo.oldAddress.postalCode || ''}\n` +
+                     `Nouvelle: ${addressChangeInfo.newAddress.address || 'Non renseignée'}, ${addressChangeInfo.newAddress.city || ''} ${addressChangeInfo.newAddress.postalCode || ''}`,
+            type: 'address_change',
+            metadata: {
+              userId: user._id,
+              userFullName: `${user.firstname} ${user.lastname}`,
+              oldAddress: addressChangeInfo.oldAddress,
+              newAddress: addressChangeInfo.newAddress,
+              changes: addressChangeInfo.changes
+            },
+            senderId: user._id,
+            targetUsers: adminIds
+          });
+
+          console.log(`✅ Notification d'adresse envoyée à ${adminIds.length} admin(s)`);
+
+          // Émettre via Socket.IO si disponible
+          const io = req.app.get('io');
+          if (io) {
+            adminIds.forEach(adminId => {
+              io.to(adminId.toString()).emit('notification', {
+                type: 'address_change',
+                notification: notification
+              });
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('❌ Erreur lors de la notification des admins:', notifError);
+        // Ne pas bloquer la réponse si la notification échoue
+      }
+    }
 
     // Prepare user response without null values
     const userResponse = {
@@ -563,8 +613,11 @@ exports.updateProfile = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      message: 'Profil mis à jour avec succès',
-      user: userResponse
+      message: addressChangeInfo.hasChanged 
+        ? 'Profil mis à jour avec succès. Les administrateurs ont été notifiés du changement d\'adresse.'
+        : 'Profil mis à jour avec succès',
+      user: userResponse,
+      addressChanged: addressChangeInfo.hasChanged
     });
   } catch (error) {
     next(error);

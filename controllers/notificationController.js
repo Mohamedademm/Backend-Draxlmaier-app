@@ -165,3 +165,74 @@ exports.getUnreadCount = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @route   GET /api/notifications/admin
+ * @desc    Get all admin notifications (filtered by type if provided)
+ * @access  Private (Admin only)
+ */
+exports.getAdminNotifications = async (req, res, next) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const { type, unreadOnly } = req.query;
+    const userId = req.user._id;
+
+    // Construire le filtre
+    const filter = {
+      targetUsers: userId
+    };
+
+    // Filtrer par type si spécifié
+    if (type) {
+      filter.type = type;
+    }
+
+    // Filtrer par non-lu si spécifié
+    if (unreadOnly === 'true') {
+      filter.readBy = { $ne: userId };
+    }
+
+    const notifications = await Notification.find(filter)
+      .populate('senderId', 'firstname lastname email profileImage')
+      .sort({ timestamp: -1 })
+      .limit(100); // Limiter à 100 notifications
+
+    // Compter les non-lus par type
+    const unreadCounts = await Notification.aggregate([
+      {
+        $match: {
+          targetUsers: userId,
+          readBy: { $ne: userId }
+        }
+      },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const countsByType = {};
+    unreadCounts.forEach(item => {
+      countsByType[item._id] = item.count;
+    });
+
+    res.status(200).json({
+      status: 'success',
+      count: notifications.length,
+      notifications,
+      unreadCountsByType: countsByType
+    });
+  } catch (error) {
+    console.error('Error fetching admin notifications:', error);
+    next(error);
+  }
+};

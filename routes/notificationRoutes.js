@@ -11,6 +11,9 @@ const { notificationValidation } = require('../middleware/validation');
 // Get all notifications
 router.get('/', authenticate, notificationController.getNotifications);
 
+// Get admin notifications (filtered)
+router.get('/admin', authenticate, notificationController.getAdminNotifications);
+
 // Get unread count
 router.get('/unread-count', authenticate, notificationController.getUnreadCount);
 
