@@ -294,7 +294,7 @@ exports.createDepartmentGroup = async (req, res, next) => {
       });
     }
 
-    // Validate department
+    // Validate department - Allow predefined departments or custom ones
     const allowedDepartments = [
       'Qualité',
       'Logistique',
@@ -304,10 +304,14 @@ exports.createDepartmentGroup = async (req, res, next) => {
       'SZB shift B'
     ];
 
-    if (!allowedDepartments.includes(department)) {
+    // If department is not in the predefined list, it's a custom department - allow it
+    const isCustomDepartment = !allowedDepartments.includes(department);
+
+    // Validate that department name is provided and not empty
+    if (!department || department.trim() === '') {
       return res.status(400).json({
         status: 'error',
-        message: 'Invalid department. Must be one of: ' + allowedDepartments.join(', ')
+        message: 'Department name is required'
       });
     }
 
@@ -325,12 +329,22 @@ exports.createDepartmentGroup = async (req, res, next) => {
     }
 
     // Get all users from this department
-    const departmentUsers = await User.find({
-      department: department,
-      active: true
-    }).select('_id');
+    // For custom departments, start with empty members (admin will add later)
+    // For predefined departments, auto-add all department users
+    let memberIds = [userId]; // Always include the creator (admin)
 
-    const memberIds = departmentUsers.map(u => u._id);
+    if (!isCustomDepartment) {
+      // Only auto-add users for predefined departments
+      const departmentUsers = await User.find({
+        department: department,
+        active: true
+      }).select('_id');
+
+      const departmentUserIds = departmentUsers.map(u => u._id.toString());
+      
+      // Merge with creator, avoiding duplicates
+      memberIds = [...new Set([userId.toString(), ...departmentUserIds])];
+    }
 
     // Create the group
     const group = await ChatGroup.create({
