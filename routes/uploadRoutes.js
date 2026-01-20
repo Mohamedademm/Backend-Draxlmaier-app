@@ -66,7 +66,14 @@ const fileFilter = (req, file, cb) => {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain'
+    'text/plain',
+    'audio/mpeg',
+    'audio/wav',
+    'audio/webm',
+    'audio/m4a',
+    'audio/mp4',
+    'audio/aac',
+    'audio/x-m4a'
   ];
 
   if (allowedTypes.includes(file.mimetype)) {
