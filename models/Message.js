@@ -47,7 +47,7 @@ const messageSchema = new mongoose.Schema({
   },
   fileType: {
     type: String,
-    enum: ['image', 'pdf', 'document', null],
+    enum: ['image', 'pdf', 'document', 'audio', null],
     default: null
   },
   timestamp: {
@@ -64,7 +64,7 @@ messageSchema.index({ groupId: 1, timestamp: -1 });
 messageSchema.index({ timestamp: -1 });
 
 // Validation: Must have either receiverId or groupId
-messageSchema.pre('validate', function(next) {
+messageSchema.pre('validate', function (next) {
   if (!this.receiverId && !this.groupId) {
     next(new Error('Message must have either receiverId or groupId'));
   } else if (this.receiverId && this.groupId) {
