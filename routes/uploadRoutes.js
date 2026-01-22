@@ -100,24 +100,24 @@ router.post('/upload', authenticate, (req, res, next) => {
       // Erreur Multer
       console.error('❌ Multer error:', err);
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
           status: 'error',
-          message: 'Fichier trop volumineux. Taille maximale: 10 MB' 
+          message: 'Fichier trop volumineux. Taille maximale: 10 MB'
         });
       }
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         status: 'error',
-        message: err.message 
+        message: err.message
       });
     } else if (err) {
       // Erreur de validation de type de fichier
       console.error('❌ File validation error:', err);
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         status: 'error',
-        message: err.message 
+        message: err.message
       });
     }
     // Pas d'erreur, continuer
@@ -126,17 +126,17 @@ router.post('/upload', authenticate, (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         status: 'error',
-        error: 'Aucun fichier fourni' 
+        error: 'Aucun fichier fourni'
       });
     }
 
-    // Construire l'URL du fichier
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
-    
+    // Construire l'URL relative du fichier
+    // On retourne un chemin relatif pour que le frontend puisse l'adapter (Web vs Mobile)
+    const fileUrl = `/uploads/${req.file.filename}`;
+
     console.log('📤 Fichier uploadé:', {
       originalName: req.file.originalname,
       fileName: req.file.filename,
@@ -144,7 +144,7 @@ router.post('/upload', authenticate, (req, res, next) => {
       mimetype: req.file.mimetype,
       user: req.user.id
     });
-    
+
     res.json({
       success: true,
       fileUrl: fileUrl,
@@ -154,10 +154,10 @@ router.post('/upload', authenticate, (req, res, next) => {
     });
   } catch (error) {
     console.error('❌ Erreur upload:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       status: 'error',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -167,29 +167,29 @@ router.delete('/upload/:filename', authenticate, async (req, res) => {
   try {
     const filename = req.params.filename;
     const filePath = path.join(uploadsDir, filename);
-    
+
     // Vérifier que le fichier existe
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Fichier non trouvé' 
+        error: 'Fichier non trouvé'
       });
     }
-    
+
     // Supprimer le fichier
     fs.unlinkSync(filePath);
-    
+
     console.log('🗑️  Fichier supprimé:', filename);
-    
-    res.json({ 
-      success: true, 
-      message: 'Fichier supprimé avec succès' 
+
+    res.json({
+      success: true,
+      message: 'Fichier supprimé avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur suppression:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -199,7 +199,7 @@ router.get('/uploads', authenticate, async (req, res) => {
   try {
     const files = fs.readdirSync(uploadsDir);
     const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-    
+
     const fileList = files.map(file => {
       const stats = fs.statSync(path.join(uploadsDir, file));
       return {
@@ -209,7 +209,7 @@ router.get('/uploads', authenticate, async (req, res) => {
         createdAt: stats.birthtime
       };
     });
-    
+
     res.json({
       success: true,
       files: fileList,
@@ -217,9 +217,9 @@ router.get('/uploads', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Erreur liste fichiers:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: error.message
     });
   }
 });
