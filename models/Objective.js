@@ -15,7 +15,7 @@ const objectiveSchema = new mongoose.Schema({
     required: [true, 'Description is required'],
     trim: true
   },
-  
+
   // Assignment
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
@@ -33,9 +33,9 @@ const objectiveSchema = new mongoose.Schema({
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department'
+    ref: 'ChatGroup' // Refers to ChatGroup as Department source of truth
   },
-  
+
   // Status & Priority
   status: {
     type: String,
@@ -47,12 +47,12 @@ const objectiveSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   },
-  
+
   // Dates
   startDate: Date,
   dueDate: Date,
   completedAt: Date,
-  
+
   // Progress
   progress: {
     type: Number,
@@ -60,7 +60,7 @@ const objectiveSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  
+
   // Workspace
   files: [{
     filename: String,
@@ -84,7 +84,7 @@ const objectiveSchema = new mongoose.Schema({
     }
   }],
   notes: String,
-  
+
   // Comments
   comments: [{
     userId: {
@@ -97,7 +97,7 @@ const objectiveSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  
+
   // Block reason
   blockReason: String
 }, {
@@ -113,7 +113,7 @@ objectiveSchema.index({ dueDate: 1 });
 objectiveSchema.index({ priority: 1 });
 
 // Auto-set completedAt when status changes to completed
-objectiveSchema.pre('save', function(next) {
+objectiveSchema.pre('save', function (next) {
   if (this.isModified('status') && this.status === 'completed' && !this.completedAt) {
     this.completedAt = new Date();
     this.progress = 100;
@@ -124,7 +124,7 @@ objectiveSchema.pre('save', function(next) {
 // Transform output
 objectiveSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     delete ret.__v;
     return ret;
   }

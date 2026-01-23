@@ -16,7 +16,7 @@ const teamSchema = new mongoose.Schema({
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department'
+    ref: 'ChatGroup' // Refers to ChatGroup as Department source of truth
   },
   leader: {
     type: mongoose.Schema.Types.ObjectId,
@@ -57,7 +57,7 @@ const teamSchema = new mongoose.Schema({
 teamSchema.index({ name: 1 }, { unique: true });
 
 // Virtual for member count
-teamSchema.virtual('memberCount').get(function() {
+teamSchema.virtual('memberCount').get(function () {
   return this.members ? this.members.length : 0;
 });
 
@@ -66,23 +66,23 @@ teamSchema.index({ department: 1 });
 teamSchema.index({ isActive: 1 });
 
 // Methods
-teamSchema.methods.addMember = function(userId) {
+teamSchema.methods.addMember = function (userId) {
   if (!this.members.includes(userId)) {
     this.members.push(userId);
   }
   return this.save();
 };
 
-teamSchema.methods.removeMember = function(userId) {
+teamSchema.methods.removeMember = function (userId) {
   this.members = this.members.filter(id => id.toString() !== userId.toString());
   return this.save();
 };
 
-teamSchema.methods.isMember = function(userId) {
+teamSchema.methods.isMember = function (userId) {
   return this.members.some(id => id.toString() === userId.toString());
 };
 
-teamSchema.methods.isLeader = function(userId) {
+teamSchema.methods.isLeader = function (userId) {
   return this.leader && this.leader.toString() === userId.toString();
 };
 

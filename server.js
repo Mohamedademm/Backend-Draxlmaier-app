@@ -12,10 +12,8 @@ const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const locationRoutes = require('./routes/locationRoutes');
 const teamRoutes = require('./routes/teams');
-const departmentRoutes = require('./routes/departments');
-const busStopRoutes = require('./routes/busStopRoutes');
+
 const objectiveRoutes = require('./routes/objectiveRoutes');
 const matriculeRoutes = require('./routes/matriculeRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
@@ -100,10 +98,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/location', locationRoutes);
 app.use('/api/teams', teamRoutes);
-app.use('/api/departments', departmentRoutes);
-app.use('/api/bus-stops', busStopRoutes);
 app.use('/api/objectives', objectiveRoutes);
 app.use('/api/matricules', matriculeRoutes);
 app.use('/api', uploadRoutes);
@@ -141,7 +136,7 @@ server.listen(PORT, () => {
   console.log(`✅ Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   console.log(`✅ Server is listening on port ${PORT}`);
   console.log(`✅ Health check: http://localhost:${PORT}/health`);
-  
+
   // Verify the server is actually listening
   const address = server.address();
   console.log(`✅ Server address:`, address);

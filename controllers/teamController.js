@@ -10,7 +10,7 @@ const catchAsync = require('../utils/catchAsync');
  */
 exports.getTeams = catchAsync(async (req, res, next) => {
   const { isActive, department } = req.query;
-  
+
   const filter = {};
   if (isActive !== undefined) {
     filter.isActive = isActive === 'true';
@@ -20,7 +20,7 @@ exports.getTeams = catchAsync(async (req, res, next) => {
   }
 
   const teams = await Team.find(filter)
-    .populate('department', 'name location')
+    .populate('department', 'name description') // ChatGroup has name and description
     .populate('leader', 'firstname lastname email role')
     .populate('members', 'firstname lastname email role')
     .sort({ createdAt: -1 });
@@ -39,7 +39,7 @@ exports.getTeams = catchAsync(async (req, res, next) => {
  */
 exports.getTeam = catchAsync(async (req, res, next) => {
   const team = await Team.findById(req.params.id)
-    .populate('department', 'name location')
+    .populate('department', 'name description')
     .populate('leader', 'firstname lastname email role')
     .populate('members', 'firstname lastname email role');
 
@@ -128,7 +128,7 @@ exports.updateTeam = catchAsync(async (req, res, next) => {
   }
   if (color) team.color = color;
   if (isActive !== undefined) team.isActive = isActive;
-  
+
   team.updatedBy = req.user._id;
   await team.save();
 
@@ -147,7 +147,7 @@ exports.updateTeam = catchAsync(async (req, res, next) => {
  */
 exports.deleteTeam = catchAsync(async (req, res, next) => {
   const team = await Team.findById(req.params.id);
-  
+
   if (!team) {
     return next(new AppError('Team not found', 404));
   }
