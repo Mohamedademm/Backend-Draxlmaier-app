@@ -32,4 +32,10 @@ router.get('/department/all', authenticate, groupController.getAllDepartmentGrou
 // Create a department group (admin only)
 router.post('/department/create', authenticate, groupController.createDepartmentGroup);
 
+// Delete group (Admin only for departments)
+router.delete('/:id', authenticate, groupController.deleteGroup);
+
+// Clear group messages (Admin only)
+router.delete('/:id/messages', authenticate, groupController.clearMessages);
+
 module.exports = router;

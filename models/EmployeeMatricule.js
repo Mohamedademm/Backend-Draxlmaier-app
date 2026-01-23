@@ -38,14 +38,6 @@ const employeeMatriculeSchema = new mongoose.Schema({
   department: {
     type: String,
     required: [true, 'Le département est requis'],
-    enum: [
-      'Qualité',
-      'Logistique',
-      'MM Shift A',
-      'MM Shift B',
-      'SZB Shift A',
-      'SZB Shift B'
-    ],
     index: true
   },
 
@@ -84,7 +76,7 @@ employeeMatriculeSchema.index({ isUsed: 1, department: 1 });
 employeeMatriculeSchema.index({ matricule: 1, isUsed: 1 });
 
 // Méthode pour marquer le matricule comme utilisé
-employeeMatriculeSchema.methods.markAsUsed = function(userId) {
+employeeMatriculeSchema.methods.markAsUsed = function (userId) {
   this.isUsed = true;
   this.userId = userId;
   this.usedAt = new Date();
@@ -92,20 +84,20 @@ employeeMatriculeSchema.methods.markAsUsed = function(userId) {
 };
 
 // Méthode statique pour vérifier si un matricule existe et est disponible
-employeeMatriculeSchema.statics.checkAvailability = async function(matricule) {
+employeeMatriculeSchema.statics.checkAvailability = async function (matricule) {
   const mat = await this.findOne({ matricule: matricule.toUpperCase() });
-  
+
   if (!mat) {
     return { exists: false, available: false, data: null };
   }
-  
+
   if (mat.isUsed) {
     return { exists: true, available: false, data: null };
   }
-  
-  return { 
-    exists: true, 
-    available: true, 
+
+  return {
+    exists: true,
+    available: true,
     data: {
       nom: mat.nom,
       prenom: mat.prenom,
@@ -116,11 +108,11 @@ employeeMatriculeSchema.statics.checkAvailability = async function(matricule) {
 };
 
 // Méthode statique pour obtenir les statistiques
-employeeMatriculeSchema.statics.getStats = async function() {
+employeeMatriculeSchema.statics.getStats = async function () {
   const total = await this.countDocuments();
   const used = await this.countDocuments({ isUsed: true });
   const available = await this.countDocuments({ isUsed: false });
-  
+
   const byDepartment = await this.aggregate([
     {
       $group: {
@@ -131,7 +123,7 @@ employeeMatriculeSchema.statics.getStats = async function() {
       }
     }
   ]);
-  
+
   return {
     total,
     used,

@@ -341,7 +341,7 @@ exports.createDepartmentGroup = async (req, res, next) => {
       }).select('_id');
 
       const departmentUserIds = departmentUsers.map(u => u._id.toString());
-      
+
       // Merge with creator, avoiding duplicates
       memberIds = [...new Set([userId.toString(), ...departmentUserIds])];
     }
@@ -367,6 +367,83 @@ exports.createDepartmentGroup = async (req, res, next) => {
       status: 'success',
       message: 'Department group created successfully',
       group: populatedGroup
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   DELETE /api/groups/:id
+ * @desc    Delete group
+ * @access  Private (Admin or Creator)
+ */
+exports.deleteGroup = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findById(req.params.id);
+
+    if (!group) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Group not found'
+      });
+    }
+
+    // Check if user is creator or admin
+    if (group.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Not authorized to delete this group'
+      });
+    }
+
+    await ChatGroup.findByIdAndDelete(req.params.id);
+
+    // Optional: Delete messages associated with this group
+    // const Message = require('../models/Message');
+    // await Message.deleteMany({ group: req.params.id });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Group deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   DELETE /api/groups/:id/messages
+ * @desc    Clear all messages in a group
+ * @access  Private (Admin or Creator)
+ */
+exports.clearMessages = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findById(req.params.id);
+
+    if (!group) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Group not found'
+      });
+    }
+
+    // Check if user is creator or admin
+    if (group.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Not authorized to clear messages for this group'
+      });
+    }
+
+    // Assuming you have a Message model, you would delete messages here.
+    // We need to import the Message model if we want to use it.
+    const Message = require('../models/Message');
+    await Message.deleteMany({ group: req.params.id });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Messages cleared successfully'
     });
   } catch (error) {
     next(error);
