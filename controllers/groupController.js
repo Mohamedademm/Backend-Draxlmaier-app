@@ -439,7 +439,7 @@ exports.clearMessages = async (req, res, next) => {
     // Assuming you have a Message model, you would delete messages here.
     // We need to import the Message model if we want to use it.
     const Message = require('../models/Message');
-    await Message.deleteMany({ group: req.params.id });
+    await Message.deleteMany({ groupId: req.params.id });
 
     res.status(200).json({
       status: 'success',
