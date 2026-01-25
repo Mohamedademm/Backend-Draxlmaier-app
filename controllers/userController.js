@@ -15,7 +15,16 @@ const mongoose = require('mongoose');
  */
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    let query = {};
+
+    // Filter based on user role
+    // Managers should not see admins
+    if (req.user.role === 'manager') {
+      query.role = { $ne: 'admin' };
+    }
+    // Admins see everyone (query remains empty)
+
+    const users = await User.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       status: 'success',
@@ -103,12 +112,12 @@ exports.createUser = async (req, res, next) => {
       status: 'active',
       profileImage: `https://ui-avatars.com/api/?name=${firstname}+${lastname}&background=1976d2&color=fff`
     };
-    
+
     // Only add team if it's a valid ObjectId
     if (team && mongoose.Types.ObjectId.isValid(team)) {
       userData.team = team;
     }
-    
+
     const user = await User.create(userData);
 
     res.status(201).json({
@@ -468,14 +477,21 @@ exports.searchUsers = async (req, res, next) => {
       });
     }
 
-    const users = await User.find({
+    const query = {
       $or: [
         { firstname: { $regex: q, $options: 'i' } },
         { lastname: { $regex: q, $options: 'i' } },
         { email: { $regex: q, $options: 'i' } }
       ],
       active: true
-    }).limit(20);
+    };
+
+    // Managers should not see admins
+    if (req.user.role === 'manager') {
+      query.role = { $ne: 'admin' };
+    }
+
+    const users = await User.find(query).limit(20);
 
     res.status(200).json({
       status: 'success',
@@ -496,12 +512,12 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.params.id;
     const currentUser = req.user;
-    
+
     // Vérifier les permissions: l'utilisateur peut modifier son propre profil
     // ou être admin/manager
-    if (userId !== currentUser._id.toString() && 
-        currentUser.role !== 'admin' && 
-        currentUser.role !== 'manager') {
+    if (userId !== currentUser._id.toString() &&
+      currentUser.role !== 'admin' &&
+      currentUser.role !== 'manager') {
       return res.status(403).json({
         status: 'error',
         message: 'Vous ne pouvez modifier que votre propre profil'
@@ -518,8 +534,8 @@ exports.updateProfile = async (req, res, next) => {
     }
 
     // Champs modifiables
-    const { firstname, lastname, phone, department, position, 
-            address, city, postalCode, profileImageBase64 } = req.body;
+    const { firstname, lastname, phone, department, position,
+      address, city, postalCode, profileImageBase64 } = req.body;
 
     // Détecter changement d'adresse AVANT la mise à jour
     const addressChangeInfo = detectAddressChange(user, { address, city, postalCode });
@@ -555,8 +571,8 @@ exports.updateProfile = async (req, res, next) => {
           const notification = await Notification.create({
             title: '📍 Changement d\'adresse',
             message: `${user.firstname} ${user.lastname} a modifié son adresse:\n` +
-                     `Ancienne: ${addressChangeInfo.oldAddress.address || 'Non renseignée'}, ${addressChangeInfo.oldAddress.city || ''} ${addressChangeInfo.oldAddress.postalCode || ''}\n` +
-                     `Nouvelle: ${addressChangeInfo.newAddress.address || 'Non renseignée'}, ${addressChangeInfo.newAddress.city || ''} ${addressChangeInfo.newAddress.postalCode || ''}`,
+              `Ancienne: ${addressChangeInfo.oldAddress.address || 'Non renseignée'}, ${addressChangeInfo.oldAddress.city || ''} ${addressChangeInfo.oldAddress.postalCode || ''}\n` +
+              `Nouvelle: ${addressChangeInfo.newAddress.address || 'Non renseignée'}, ${addressChangeInfo.newAddress.city || ''} ${addressChangeInfo.newAddress.postalCode || ''}`,
             type: 'address_change',
             metadata: {
               userId: user._id,
@@ -613,7 +629,7 @@ exports.updateProfile = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      message: addressChangeInfo.hasChanged 
+      message: addressChangeInfo.hasChanged
         ? 'Profil mis à jour avec succès. Les administrateurs ont été notifiés du changement d\'adresse.'
         : 'Profil mis à jour avec succès',
       user: userResponse,
