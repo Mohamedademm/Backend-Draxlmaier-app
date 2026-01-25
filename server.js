@@ -80,6 +80,11 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Swagger Documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 // Rate limiting
 app.use('/api/', rateLimiter);
 
@@ -114,43 +119,44 @@ app.use((req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
+// Import logger
+const logger = require('./config/logger');
+
 // Initialize Socket.io handlers
 socketHandler(io);
 
 // Start server
 const PORT = process.env.PORT || 3000;
-// On Render (and most cloud platforms), we should listen on 0.0.0.0 or let it default
-// const HOST = '127.0.0.1'; 
 
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
+    logger.error(`Port ${PORT} is already in use`);
     process.exit(1);
   } else {
-    console.error('Server error:', error);
+    logger.error('Server error:', error);
     process.exit(1);
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`✅ Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  console.log(`✅ Server is listening on port ${PORT}`);
-  console.log(`✅ Health check: http://localhost:${PORT}/health`);
+  logger.info(`✅ Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  logger.info(`✅ Server is listening on port ${PORT}`);
+  logger.info(`✅ Health check: http://localhost:${PORT}/health`);
 
   // Verify the server is actually listening
   const address = server.address();
-  console.log(`✅ Server address:`, address);
+  logger.info(`✅ Server address: ${JSON.stringify(address)}`);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
+  logger.error('Unhandled Rejection:', err);
   server.close(() => process.exit(1));
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  logger.error('Uncaught Exception:', err);
   process.exit(1);
 });
 

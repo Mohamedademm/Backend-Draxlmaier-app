@@ -204,6 +204,51 @@ exports.sendMessage = async (req, res, next) => {
     const populatedMessage = await Message.findById(message._id)
       .populate('senderId', 'firstname lastname email');
 
+    // Send Push Notification asynchronously
+    try {
+      const notificationService = require('../services/notificationService');
+      const User = require('../models/User');
+
+      let targetTokens = [];
+      let notificationTitle = `New message from ${populatedMessage.senderId.firstname} ${populatedMessage.senderId.lastname}`;
+
+      if (groupId) {
+        // Group message: Get all group members except sender
+        const ChatGroup = require('../models/ChatGroup');
+        const group = await ChatGroup.findById(groupId);
+        if (group) {
+          notificationTitle = `New message in ${group.name}`;
+          const members = await User.find({
+            _id: { $in: group.members, $ne: senderId },
+            fcmToken: { $exists: true, $ne: null }
+          });
+          targetTokens = members.map(m => m.fcmToken);
+        }
+      } else if (receiverId) {
+        // Direct message
+        const receiver = await User.findById(receiverId);
+        if (receiver && receiver.fcmToken) {
+          targetTokens.push(receiver.fcmToken);
+        }
+      }
+
+      if (targetTokens.length > 0) {
+        await notificationService.sendMulticast(
+          targetTokens,
+          notificationTitle,
+          content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+          {
+            type: 'chat',
+            chatId: groupId || senderId.toString(),
+            isGroup: groupId ? 'true' : 'false'
+          }
+        );
+      }
+    } catch (notifError) {
+      console.error('Failed to send notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     res.status(201).json({
       success: true,
       status: 'success',

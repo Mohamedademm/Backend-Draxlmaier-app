@@ -5,7 +5,52 @@ const { authenticate } = require('../middleware/auth');
 const { groupValidation } = require('../middleware/validation');
 
 /**
- * Group Routes
+ * @swagger
+ * tags:
+ *   name: Groups
+ *   description: Chat group management
+ */
+
+/**
+ * @swagger
+ * /groups:
+ *   get:
+ *     summary: Get all groups for current user
+ *     tags: [Groups]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of groups
+ */
+
+/**
+ * @swagger
+ * /groups:
+ *   post:
+ *     summary: Create a new group
+ *     tags: [Groups]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - members
+ *             properties:
+ *               name:
+ *                 type: string
+ *               members:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Group created successfully
  */
 
 // Get all groups
