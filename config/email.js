@@ -5,20 +5,37 @@ const nodemailer = require('nodemailer');
  * Handles email sending for password recovery and notifications
  */
 
-// Create transporter (Gmail configuration)
+// Create transporter (Gmail configuration with explicit SMTP)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    }
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false // Fix for some server environments
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error('❌ Email service connection error:', error);
+  } else {
+    console.log('✅ Email service is ready to send messages');
+  }
 });
 
 /**
  * Professional HTML template for password reset email
  */
 const getResetPasswordTemplate = (resetUrl, userEmail) => {
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="fr">
     <head>
@@ -152,26 +169,26 @@ const getResetPasswordTemplate = (resetUrl, userEmail) => {
  * Send password reset email
  */
 const sendPasswordResetEmail = async (userEmail, resetUrl) => {
-    const mailOptions = {
-        from: `"Draexlmaier App" <${process.env.EMAIL_USER}>`,
-        to: userEmail,
-        subject: '🔐 Réinitialisation de votre mot de passe - Draexlmaier',
-        html: getResetPasswordTemplate(resetUrl, userEmail)
-    };
+  const mailOptions = {
+    from: `"Draexlmaier App" <${process.env.EMAIL_USER}>`,
+    to: userEmail,
+    subject: '🔐 Réinitialisation de votre mot de passe - Draexlmaier',
+    html: getResetPasswordTemplate(resetUrl, userEmail)
+  };
 
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully to ${userEmail}`);
-        console.log(`Message ID: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`❌ Error sending email to ${userEmail}:`, error);
-        throw new Error(`Failed to send email: ${error.message}`);
-    }
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully to ${userEmail}`);
+    console.log(`Message ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ Error sending email to ${userEmail}:`, error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
 };
 
 module.exports = {
-    transporter,
-    getResetPasswordTemplate,
-    sendPasswordResetEmail
+  transporter,
+  getResetPasswordTemplate,
+  sendPasswordResetEmail
 };
