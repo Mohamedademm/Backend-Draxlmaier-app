@@ -7,21 +7,23 @@ const nodemailer = require('nodemailer');
 
 // Create transporter (Gmail configuration with explicit SMTP)
 // Create transporter (Gmail configuration with explicit SMTP)
+// Create transporter (Gmail configuration with explicit SMTP)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   },
   tls: {
-    rejectUnauthorized: false // Fix for some server environments
+    rejectUnauthorized: false
   },
-  connectionTimeout: 10000, // 10 seconds
+  debug: true, // Enable debug logs
+  logger: true, // Log to console
+  connectionTimeout: 10000,
   greetingTimeout: 10000,
-  socketTimeout: 10000,
-  // Force IPv4 to avoid IPv6 connectivity issues on some cloud providers (like Render)
+  // Force IPv4 to avoid IPv6 connectivity issues
   family: 4
 });
 
