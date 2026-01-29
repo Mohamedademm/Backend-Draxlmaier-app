@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { generateToken } = require('../config/jwt');
+const crypto = require('crypto');
 
 /**
  * Authentication Controller
@@ -415,6 +416,98 @@ exports.createEmployee = async (req, res, next) => {
         password: 'Employee123'
       },
       user: employee
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/auth/forgotpassword
+ * @desc    Forgot Password - Send reset token via email
+ * @access  Public
+ */
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No user found with that email'
+      });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Hash token and save to DB
+    user.resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Token expires in 10 minutes
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    // In a real app, send email here. For PFE demo, we return the token directly.
+    console.log(`🔑 DEMO MODE - Reset Token for ${user.email}: ${resetToken}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Email sent (Simulation: Check Server Logs for Token)',
+      resetToken: resetToken // Only for development/demo purposes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   PUT /api/auth/resetpassword/:resetToken
+ * @desc    Reset Password
+ * @access  Public
+ */
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { resetToken } = req.params;
+    const { password } = req.body;
+
+    // Hash token to compare with DB
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid or expired token'
+      });
+    }
+
+    // Set new password
+    user.passwordHash = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save(); // Will trigger pre-save hook for hashing
+
+    // Generate new JWT
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password updated successfully',
+      token
     });
   } catch (error) {
     next(error);

@@ -118,6 +118,10 @@ router.post('/login', strictRateLimiter, authValidation.login, authController.lo
 // Google Authentication
 router.post('/google', strictRateLimiter, authController.googleAuth);
 
+// Password Reset Routes
+router.post('/forgotpassword', strictRateLimiter, authController.forgotPassword);
+router.put('/resetpassword/:resetToken', strictRateLimiter, authController.resetPassword);
+
 // Get current user
 router.get('/me', authenticate, authController.getCurrentUser);
 

@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  
+
   // Professional information
   employeeId: {
     type: String,
@@ -70,19 +70,19 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team'
   },
-  
+
   // Contact
   phone: {
     type: String,
     trim: true
   },
-  
+
   // Profile Image (stored as base64 or URL)
   profileImage: {
     type: String,
     trim: true
   },
-  
+
   // Address fields
   address: {
     type: String,
@@ -102,7 +102,7 @@ const userSchema = new mongoose.Schema({
   longitude: {
     type: Number
   },
-  
+
   // Legacy location field (kept for backward compatibility)
   location: {
     address: {
@@ -121,7 +121,7 @@ const userSchema = new mongoose.Schema({
       }
     }
   },
-  
+
   // Validation info
   validatedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -129,12 +129,17 @@ const userSchema = new mongoose.Schema({
   },
   validatedAt: Date,
   rejectionReason: String,
-  
+
   // Security
   fcmToken: {
     type: String,
     default: null
   },
+
+  // Password Reset
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
+
   lastLogin: Date
 }, {
   timestamps: true
@@ -145,10 +150,10 @@ userSchema.index({ role: 1 });
 userSchema.index({ active: 1 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('passwordHash')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
@@ -159,7 +164,7 @@ userSchema.pre('save', async function(next) {
 });
 
 // Method to compare passwords
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.passwordHash);
   } catch (error) {
@@ -171,14 +176,14 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.index({ email: 1 }, { unique: true });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   return `${this.firstname} ${this.lastname}`;
 });
 
 // Transform output to remove sensitive data
 userSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     delete ret.passwordHash;
     delete ret.__v;
     return ret;
