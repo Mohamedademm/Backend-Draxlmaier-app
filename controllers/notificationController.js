@@ -15,6 +15,16 @@ exports.getNotifications = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
+    // Security: Block access for pending/inactive users
+    if (!req.user.active || req.user.status === 'pending') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Votre compte est en attente de validation. Vous ne pouvez pas accéder aux notifications.',
+        notifications: [],
+        count: 0
+      });
+    }
+
     // Find notifications where:
     // 1. user is in targetUsers array
     // 2. OR user is the sender (so they can see what they sent)

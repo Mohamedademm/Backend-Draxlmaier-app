@@ -453,14 +453,34 @@ exports.forgotPassword = async (req, res, next) => {
 
     await user.save({ validateBeforeSave: false });
 
-    // In a real app, send email here. For PFE demo, we return the token directly.
-    console.log(`🔑 DEMO MODE - Reset Token for ${user.email}: ${resetToken}`);
+    // PRODUCTION: Send real email
+    try {
+      const { sendPasswordResetEmail } = require('../config/email');
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Email sent (Simulation: Check Server Logs for Token)',
-      resetToken: resetToken // Only for development/demo purposes
-    });
+      // Create reset URL (for mobile app, use deep link; for web, use frontend URL)
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:8080'}/reset-password/${resetToken}`;
+
+      await sendPasswordResetEmail(user.email, resetUrl);
+
+      console.log(`✅ Password reset email sent to ${user.email}`);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Email de réinitialisation envoyé avec succès. Vérifiez votre boîte mail.'
+      });
+    } catch (emailError) {
+      console.error('❌ Error sending email:', emailError);
+
+      // Rollback: Clear the reset token if email fails
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({
+        status: 'error',
+        message: 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer plus tard.'
+      });
+    }
   } catch (error) {
     next(error);
   }
