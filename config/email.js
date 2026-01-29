@@ -8,25 +8,18 @@ const nodemailer = require('nodemailer');
 // Create transporter (Gmail configuration with explicit SMTP)
 // Create transporter (Gmail configuration with explicit SMTP)
 // Create transporter (Gmail configuration with explicit SMTP and Pooling)
+// Create transporter
+// Utilisation du service 'gmail' prédéfini qui gère automatiquement les ports/sécurité
 const transporter = nodemailer.createTransport({
-  pool: true, // Use pooled connections for better reliability
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 30000, // Increased to 30 seconds
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  // Force IPv4 to avoid IPv6 connectivity issues
+  // Force IPv4 pour éviter les problèmes de timeout sur Render (Cloud)
   family: 4,
-  debug: true,
-  logger: true
+  logger: true,
+  debug: true
 });
 
 // Verify connection configuration
