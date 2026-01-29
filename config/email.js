@@ -7,11 +7,12 @@ const nodemailer = require('nodemailer');
 
 // Create transporter (Gmail configuration with explicit SMTP)
 // Create transporter (Gmail configuration with explicit SMTP)
-// Create transporter (Gmail configuration with explicit SMTP)
+// Create transporter (Gmail configuration with explicit SMTP and Pooling)
 const transporter = nodemailer.createTransport({
+  pool: true, // Use pooled connections for better reliability
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
@@ -19,12 +20,13 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  debug: true, // Enable debug logs
-  logger: true, // Log to console
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
+  connectionTimeout: 30000, // Increased to 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   // Force IPv4 to avoid IPv6 connectivity issues
-  family: 4
+  family: 4,
+  debug: true,
+  logger: true
 });
 
 // Verify connection configuration
