@@ -6,6 +6,7 @@ const nodemailer = require('nodemailer');
  */
 
 // Create transporter (Gmail configuration with explicit SMTP)
+// Create transporter (Gmail configuration with explicit SMTP)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -19,7 +20,9 @@ const transporter = nodemailer.createTransport({
   },
   connectionTimeout: 10000, // 10 seconds
   greetingTimeout: 10000,
-  socketTimeout: 10000
+  socketTimeout: 10000,
+  // Force IPv4 to avoid IPv6 connectivity issues on some cloud providers (like Render)
+  family: 4
 });
 
 // Verify connection configuration
