@@ -29,6 +29,10 @@ const socketHandler = require('./socket/socketHandler');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy - CRITICAL for Render/Heroku deployment
+// This allows Express to trust the X-Forwarded-* headers from Render's proxy
+app.set('trust proxy', 1);
+
 // Initialize Socket.io
 const io = socketIo(server, {
   cors: {
