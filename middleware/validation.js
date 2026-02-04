@@ -1,15 +1,9 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-/**
- * Validation middleware wrapper
- * Checks validation results and returns errors if any
- */
 const validate = (validations) => {
   return async (req, res, next) => {
-    // Execute all validations
     await Promise.all(validations.map(validation => validation.run(req)));
 
-    // Check for errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -26,11 +20,7 @@ const validate = (validations) => {
   };
 };
 
-/**
- * User validation rules
- */
 const userValidation = {
-  // Register/Create user
   create: validate([
     body('firstname')
       .trim()
@@ -53,7 +43,6 @@ const userValidation = {
       .isIn(['admin', 'manager', 'employee']).withMessage('Invalid role')
   ]),
 
-  // Update user
   update: validate([
     param('id')
       .isMongoId().withMessage('Invalid user ID'),
@@ -78,18 +67,13 @@ const userValidation = {
       .isBoolean().withMessage('Active must be boolean')
   ]),
 
-  // Get by ID
   getById: validate([
     param('id')
       .isMongoId().withMessage('Invalid user ID')
   ])
 };
 
-/**
- * Message validation rules
- */
 const messageValidation = {
-  // Send message
   send: validate([
     body('content')
       .trim()

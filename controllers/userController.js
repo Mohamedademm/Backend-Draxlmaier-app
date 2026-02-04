@@ -3,26 +3,13 @@ const Notification = require('../models/Notification');
 const detectAddressChange = require('../middleware/detectAddressChange');
 const mongoose = require('mongoose');
 
-/**
- * User Controller
- * Handles user management operations (CRUD)
- */
-
-/**
- * @route   GET /api/users
- * @desc    Get all users
- * @access  Private (Admin/Manager)
- */
 exports.getAllUsers = async (req, res, next) => {
   try {
     let query = {};
 
-    // Filter based on user role
-    // Managers should not see admins
     if (req.user.role === 'manager') {
       query.role = { $ne: 'admin' };
     }
-    // Admins see everyone (query remains empty)
 
     const users = await User.find(query).sort({ createdAt: -1 });
 
@@ -36,11 +23,6 @@ exports.getAllUsers = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/users/:id
- * @desc    Get user by ID
- * @access  Private
- */
 exports.getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -61,22 +43,13 @@ exports.getUserById = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/users
- * @desc    Create new user
- * @access  Private (Admin/Manager with restrictions)
- */
 exports.createUser = async (req, res, next) => {
   try {
     const { firstname, lastname, email, password, role, phone, department, team } = req.body;
 
-    // Vérifier les permissions selon le rôle de l'utilisateur connecté
     const currentUserRole = req.user.role;
     const requestedRole = role || 'employee';
 
-    // Règles de permissions:
-    // Admin peut créer: admin, manager, employee
-    // Manager peut créer: manager, employee
     if (currentUserRole === 'manager') {
       if (requestedRole === 'admin') {
         return res.status(403).json({
@@ -91,7 +64,6 @@ exports.createUser = async (req, res, next) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -100,12 +72,11 @@ exports.createUser = async (req, res, next) => {
       });
     }
 
-    // Create user
     const userData = {
       firstname,
       lastname,
       email,
-      passwordHash: password, // Will be hashed by pre-save hook
+      passwordHash: password,
       role: requestedRole,
       phone: phone || '',
       department: department || 'Non assigné',
@@ -113,7 +84,6 @@ exports.createUser = async (req, res, next) => {
       profileImage: `https://ui-avatars.com/api/?name=${firstname}+${lastname}&background=1976d2&color=fff`
     };
 
-    // Only add team if it's a valid ObjectId
     if (team && mongoose.Types.ObjectId.isValid(team)) {
       userData.team = team;
     }
@@ -138,11 +108,6 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
-/**
- * @route   PUT /api/users/:id
- * @desc    Update user
- * @access  Private (Admin)
- */
 exports.updateUser = async (req, res, next) => {
   try {
     const { firstname, lastname, email, role, active } = req.body;

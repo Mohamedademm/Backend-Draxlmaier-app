@@ -3,26 +3,18 @@ const User = require('../models/User');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
-/**
- * Controller pour la gestion des matricules
- */
-
-// Créer un nouveau matricule
 exports.createMatricule = catchAsync(async (req, res, next) => {
   const { matricule, nom, prenom, poste, department } = req.body;
 
-  // Vérifier que l'utilisateur est admin ou manager
   if (req.user.role !== 'admin' && req.user.role !== 'manager') {
     return next(new AppError('Accès non autorisé. Seuls les admins et managers peuvent créer des matricules', 403));
   }
 
-  // Vérifier si le matricule existe déjà
   const existingMatricule = await EmployeeMatricule.findOne({ matricule: matricule.toUpperCase() });
   if (existingMatricule) {
     return next(new AppError('Ce matricule existe déjà', 400));
   }
 
-  // Créer le matricule
   const newMatricule = await EmployeeMatricule.create({
     matricule: matricule.toUpperCase(),
     nom,
@@ -40,9 +32,8 @@ exports.createMatricule = catchAsync(async (req, res, next) => {
   });
 });
 
-// Créer plusieurs matricules en masse
 exports.bulkCreateMatricules = catchAsync(async (req, res, next) => {
-  const { matricules } = req.body; // Array of matricule objects
+  const { matricules } = req.body;
 
   // Vérifier que l'utilisateur est admin ou manager
   if (req.user.role !== 'admin' && req.user.role !== 'manager') {
@@ -53,16 +44,14 @@ exports.bulkCreateMatricules = catchAsync(async (req, res, next) => {
     return next(new AppError('Veuillez fournir un tableau de matricules', 400));
   }
 
-  // Préparer les matricules avec createdBy
   const matriculesToInsert = matricules.map(mat => ({
     ...mat,
     matricule: mat.matricule.toUpperCase(),
     createdBy: req.user._id
   }));
 
-  // Insérer en masse (ignore les doublons)
   const result = await EmployeeMatricule.insertMany(matriculesToInsert, {
-    ordered: false, // Continue même si certains échouent
+    ordered: false,
     rawResult: true
   });
 
@@ -75,11 +64,9 @@ exports.bulkCreateMatricules = catchAsync(async (req, res, next) => {
   });
 });
 
-// Importer des matricules depuis Excel (traité côté client, on reçoit le JSON)
 exports.importExcel = catchAsync(async (req, res, next) => {
   const { matricules } = req.body;
 
-  // Vérifier que l'utilisateur est admin ou manager
   if (req.user.role !== 'admin' && req.user.role !== 'manager') {
     return next(new AppError('Accès non autorisé', 403));
   }
@@ -88,7 +75,6 @@ exports.importExcel = catchAsync(async (req, res, next) => {
     return next(new AppError('Aucune donnée à importer', 400));
   }
 
-  // Utiliser bulkCreate
   const matriculesToInsert = matricules.map(mat => ({
     matricule: mat.matricule.toUpperCase(),
     nom: mat.nom,
@@ -111,7 +97,6 @@ exports.importExcel = catchAsync(async (req, res, next) => {
       }
     });
   } catch (error) {
-    // Retourner les erreurs de doublons
     const inserted = error.insertedDocs ? error.insertedDocs.length : 0;
 
     res.status(200).json({
@@ -126,25 +111,21 @@ exports.importExcel = catchAsync(async (req, res, next) => {
   }
 });
 
-// Obtenir tous les matricules (avec filtres)
 exports.getAllMatricules = catchAsync(async (req, res, next) => {
   const { status, department, search } = req.query;
 
   const query = {};
 
-  // Filtre par statut (available/used)
   if (status === 'available') {
     query.isUsed = false;
   } else if (status === 'used') {
     query.isUsed = true;
   }
 
-  // Filtre par département
   if (department) {
     query.department = department;
   }
 
-  // Recherche par matricule, nom ou prénom
   if (search) {
     query.$or = [
       { matricule: { $regex: search, $options: 'i' } },
@@ -167,7 +148,6 @@ exports.getAllMatricules = catchAsync(async (req, res, next) => {
   });
 });
 
-// Obtenir les matricules disponibles uniquement
 exports.getAvailableMatricules = catchAsync(async (req, res, next) => {
   const { department } = req.query;
 
@@ -190,7 +170,6 @@ exports.getAvailableMatricules = catchAsync(async (req, res, next) => {
   });
 });
 
-// Vérifier un matricule et récupérer les infos
 exports.checkMatricule = catchAsync(async (req, res, next) => {
   const { matricule } = req.params;
 

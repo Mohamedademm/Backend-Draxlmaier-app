@@ -1,16 +1,6 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
 
-/**
- * Message Controller
- * Handles chat message operations
- */
-
-/**
- * @route   GET /api/messages/history
- * @desc    Get chat history
- * @access  Private
- */
 exports.getChatHistory = async (req, res, next) => {
   try {
     const { recipientId, groupId, limit = 50, skip = 0 } = req.query;
@@ -19,7 +9,6 @@ exports.getChatHistory = async (req, res, next) => {
     let query = {};
 
     if (recipientId) {
-      // Get direct messages between two users
       query = {
         $or: [
           { senderId: userId, receiverId: recipientId },
@@ -27,7 +16,6 @@ exports.getChatHistory = async (req, res, next) => {
         ]
       };
     } else if (groupId) {
-      // Get group messages
       query = { groupId };
     } else {
       return res.status(400).json({
@@ -45,23 +33,17 @@ exports.getChatHistory = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       count: messages.length,
-      messages: messages.reverse() // Return in chronological order
+      messages: messages.reverse()
     });
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * @route   GET /api/messages/conversations
- * @desc    Get all conversations for current user
- * @access  Private
- */
 exports.getConversations = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    // Get all unique conversations
     const conversations = await Message.aggregate([
       {
         $match: {
@@ -69,7 +51,7 @@ exports.getConversations = async (req, res, next) => {
             { senderId: userId },
             { receiverId: userId }
           ],
-          groupId: null // Only direct messages
+          groupId: null
         }
       },
       {
@@ -104,13 +86,11 @@ exports.getConversations = async (req, res, next) => {
       }
     ]);
 
-    // Populate recipient details
     await User.populate(conversations, {
       path: '_id',
       select: 'firstname lastname email'
     });
 
-    // Format response
     const formattedConversations = conversations.map(conv => ({
       recipientId: conv._id._id,
       recipientName: `${conv._id.firstname} ${conv._id.lastname}`,
@@ -130,11 +110,6 @@ exports.getConversations = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/messages/mark-read
- * @desc    Mark messages as read
- * @access  Private
- */
 exports.markAsRead = async (req, res, next) => {
   try {
     const { chatId, isGroup } = req.body;
@@ -165,17 +140,11 @@ exports.markAsRead = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/messages
- * @desc    Send a message (direct or group)
- * @access  Private
- */
 exports.sendMessage = async (req, res, next) => {
   try {
     const { receiverId, groupId, content, type } = req.body;
     const senderId = req.user._id;
 
-    // Validate input
     if (!content || content.trim() === '') {
       return res.status(400).json({
         status: 'error',
@@ -190,7 +159,6 @@ exports.sendMessage = async (req, res, next) => {
       });
     }
 
-    // Create message
     const message = await Message.create({
       senderId,
       receiverId: groupId ? null : receiverId,
@@ -200,11 +168,9 @@ exports.sendMessage = async (req, res, next) => {
       status: 'sent'
     });
 
-    // Populate sender info
     const populatedMessage = await Message.findById(message._id)
       .populate('senderId', 'firstname lastname email');
 
-    // Send Push Notification asynchronously
     try {
       const notificationService = require('../services/notificationService');
       const User = require('../models/User');
@@ -213,7 +179,6 @@ exports.sendMessage = async (req, res, next) => {
       let notificationTitle = `New message from ${populatedMessage.senderId.firstname} ${populatedMessage.senderId.lastname}`;
 
       if (groupId) {
-        // Group message: Get all group members except sender
         const ChatGroup = require('../models/ChatGroup');
         const group = await ChatGroup.findById(groupId);
         if (group) {
@@ -225,7 +190,6 @@ exports.sendMessage = async (req, res, next) => {
           targetTokens = members.map(m => m.fcmToken);
         }
       } else if (receiverId) {
-        // Direct message
         const receiver = await User.findById(receiverId);
         if (receiver && receiver.fcmToken) {
           targetTokens.push(receiver.fcmToken);
@@ -246,7 +210,6 @@ exports.sendMessage = async (req, res, next) => {
       }
     } catch (notifError) {
       console.error('Failed to send notification:', notifError);
-      // Don't fail the request if notification fails
     }
 
     res.status(201).json({

@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
 
-/**
- * Message Schema
- * Represents a chat message between users or in a group
- */
 const messageSchema = new mongoose.Schema({
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +32,6 @@ const messageSchema = new mongoose.Schema({
     enum: ['sent', 'delivered', 'read'],
     default: 'sent'
   },
-  // File attachments
   fileUrl: {
     type: String,
     default: null
@@ -58,12 +53,10 @@ const messageSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
 messageSchema.index({ senderId: 1, receiverId: 1, timestamp: -1 });
 messageSchema.index({ groupId: 1, timestamp: -1 });
 messageSchema.index({ timestamp: -1 });
 
-// Validation: Must have either receiverId or groupId
 messageSchema.pre('validate', function (next) {
   if (!this.receiverId && !this.groupId) {
     next(new Error('Message must have either receiverId or groupId'));

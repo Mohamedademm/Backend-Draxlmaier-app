@@ -1,16 +1,6 @@
 const Objective = require('../models/Objective');
 const User = require('../models/User');
 
-/**
- * Objective Controller
- * Handles objective/task management operations
- */
-
-/**
- * @route   GET /api/objectives/my-objectives
- * @desc    Get objectives assigned to current user
- * @access  Private (Employee)
- */
 exports.getMyObjectives = async (req, res, next) => {
   try {
     const { status, priority } = req.query;
@@ -37,11 +27,6 @@ exports.getMyObjectives = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/objectives/team
- * @desc    Get objectives for manager's team
- * @access  Private (Manager/Admin)
- */
 exports.getTeamObjectives = async (req, res, next) => {
   try {
     const { teamId, status, priority } = req.query;
@@ -51,7 +36,6 @@ exports.getTeamObjectives = async (req, res, next) => {
     if (teamId) {
       filter.team = teamId;
     } else {
-      // Get objectives assigned by this manager
       filter.assignedBy = req.user._id;
     }
 
@@ -75,14 +59,8 @@ exports.getTeamObjectives = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/objectives/create
- * @desc    Create new objective
- * @access  Private (Manager/Admin)
- */
 exports.createObjective = async (req, res, next) => {
   try {
-    // Vérifier que l'utilisateur est admin ou manager
     if (req.user.role !== 'admin' && req.user.role !== 'manager') {
       return res.status(403).json({
         status: 'error',
@@ -102,7 +80,6 @@ exports.createObjective = async (req, res, next) => {
       links
     } = req.body;
 
-    // Verify assigned user exists
     const user = await User.findById(assignedTo);
     if (!user) {
       return res.status(404).json({
@@ -126,11 +103,9 @@ exports.createObjective = async (req, res, next) => {
 
     await objective.save();
 
-    // Populate before sending response
     await objective.populate('assignedTo', 'firstname lastname email role');
     await objective.populate('assignedBy', 'firstname lastname role');
 
-    // Send notification to assigned user
     const Notification = require('../models/Notification');
     try {
       await Notification.create({
@@ -141,7 +116,6 @@ exports.createObjective = async (req, res, next) => {
         readBy: []
       });
 
-      // Emit socket event if io is available
       if (req.app.get('io')) {
         req.app.get('io').to(assignedTo.toString()).emit('newNotification', {
           title: 'Nouvel Objectif Assigné',
@@ -150,7 +124,6 @@ exports.createObjective = async (req, res, next) => {
       }
     } catch (notifError) {
       console.error('Error sending notification:', notifError);
-      // Continue even if notification fails
     }
 
     res.status(201).json({
@@ -163,11 +136,6 @@ exports.createObjective = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/objectives/:id
- * @desc    Get objective by ID
- * @access  Private
- */
 exports.getObjectiveById = async (req, res, next) => {
   try {
     const objective = await Objective.findById(req.params.id)
@@ -185,7 +153,6 @@ exports.getObjectiveById = async (req, res, next) => {
       });
     }
 
-    // Check authorization
     const isAssigned = objective.assignedTo._id.toString() === req.user._id.toString();
     const isAssigner = objective.assignedBy._id.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';

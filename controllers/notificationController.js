@@ -1,21 +1,10 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-/**
- * Notification Controller
- * Handles notification operations
- */
-
-/**
- * @route   GET /api/notifications
- * @desc    Get all notifications for current user
- * @access  Private
- */
 exports.getNotifications = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    // Security: Block access for pending/inactive users
     if (!req.user.active || req.user.status === 'pending') {
       return res.status(403).json({
         status: 'error',
@@ -25,9 +14,6 @@ exports.getNotifications = async (req, res, next) => {
       });
     }
 
-    // Find notifications where:
-    // 1. user is in targetUsers array
-    // 2. OR user is the sender (so they can see what they sent)
     const notifications = await Notification.find({
       $or: [
         { targetUsers: userId },
@@ -50,17 +36,11 @@ exports.getNotifications = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/notifications/send
- * @desc    Send notification
- * @access  Private (Admin/Manager)
- */
 exports.sendNotification = async (req, res, next) => {
   try {
     const { title, message, targetUsers, targetDepartment, sendToAll } = req.body;
     const senderId = req.user._id;
 
-    // Validate required fields
     if (!title || !message) {
       return res.status(400).json({
         status: 'error',
@@ -71,18 +51,14 @@ exports.sendNotification = async (req, res, next) => {
     let recipients = [];
 
     if (sendToAll) {
-      // Send to all active users except sender
       const users = await User.find({ active: true, _id: { $ne: senderId } });
       recipients = users.map(user => user._id);
     } else if (targetDepartment) {
-      // Send to all users in a specific department
       const users = await User.find({ department: targetDepartment, active: true, _id: { $ne: senderId } });
       recipients = users.map(user => user._id);
     } else if (targetUsers && targetUsers.length > 0) {
-      // Send to specific users
       recipients = targetUsers;
     } else {
-      // Default: send to all if nothing specified (compatible with old logic)
       const users = await User.find({ active: true, _id: { $ne: senderId } });
       recipients = users.map(user => user._id);
     }
@@ -114,11 +90,6 @@ exports.sendNotification = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/notifications/:id/read
- * @desc    Mark notification as read
- * @access  Private
- */
 exports.markAsRead = async (req, res, next) => {
   try {
     const notificationId = req.params.id;
@@ -133,7 +104,6 @@ exports.markAsRead = async (req, res, next) => {
       });
     }
 
-    // Check if user is a target
     if (!notification.targetUsers.includes(userId)) {
       return res.status(403).json({
         status: 'error',
@@ -141,7 +111,6 @@ exports.markAsRead = async (req, res, next) => {
       });
     }
 
-    // Mark as read
     await notification.markAsReadBy(userId);
 
     res.status(200).json({
@@ -153,11 +122,6 @@ exports.markAsRead = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/notifications/unread-count
- * @desc    Get unread notification count
- * @access  Private
- */
 exports.getUnreadCount = async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -176,14 +140,8 @@ exports.getUnreadCount = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/notifications/admin
- * @desc    Get all admin notifications (filtered by type if provided)
- * @access  Private (Admin only)
- */
 exports.getAdminNotifications = async (req, res, next) => {
   try {
-    // Vérifier que l'utilisateur est admin
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
@@ -194,7 +152,6 @@ exports.getAdminNotifications = async (req, res, next) => {
     const { type, unreadOnly } = req.query;
     const userId = req.user._id;
 
-    // Construire le filtre
     const filter = {
       targetUsers: userId
     };

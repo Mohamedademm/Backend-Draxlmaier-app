@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-/**
- * User Schema
- * Represents an employee in the system with authentication and role management
- */
 const userSchema = new mongoose.Schema({
   firstname: {
     type: String,
@@ -26,7 +22,7 @@ const userSchema = new mongoose.Schema({
   passwordHash: {
     type: String,
     required: [true, 'Password is required'],
-    select: false // Don't return password by default
+    select: false
   },
   role: {
     type: String,
@@ -43,7 +39,6 @@ const userSchema = new mongoose.Schema({
     default: true
   },
 
-  // Professional information
   employeeId: {
     type: String,
     unique: true,
@@ -71,19 +66,16 @@ const userSchema = new mongoose.Schema({
     ref: 'Team'
   },
 
-  // Contact
   phone: {
     type: String,
     trim: true
   },
 
-  // Profile Image (stored as base64 or URL)
   profileImage: {
     type: String,
     trim: true
   },
 
-  // Address fields
   address: {
     type: String,
     trim: true

@@ -1,21 +1,14 @@
 const Objective = require('../models/Objective');
 const User = require('../models/User');
 
-/**
- * @route   GET /api/objectives/stats
- * @desc    Get objectives statistics for manager/admin
- * @access  Private (Manager/Admin)
- */
 exports.getObjectiveStats = async (req, res, next) => {
     try {
-        // Get all objectives for this manager or all if admin
         const filter = req.user.role === 'admin'
             ? {}
             : { assignedBy: req.user._id };
 
         const objectives = await Objective.find(filter);
 
-        // Calculate statistics
         const stats = {
             total: objectives.length,
             byStatus: {
@@ -47,11 +40,6 @@ exports.getObjectiveStats = async (req, res, next) => {
     }
 };
 
-/**
- * @route   POST /api/objectives/bulk-update
- * @desc    Update multiple objectives at once
- * @access  Private (Manager/Admin)
- */
 exports.bulkUpdateObjectives = async (req, res, next) => {
     try {
         const { objectiveIds, updates } = req.body;
@@ -63,7 +51,6 @@ exports.bulkUpdateObjectives = async (req, res, next) => {
             });
         }
 
-        // Update all objectives
         const result = await Objective.updateMany(
             { _id: { $in: objectiveIds } },
             { $set: updates }
@@ -79,11 +66,6 @@ exports.bulkUpdateObjectives = async (req, res, next) => {
     }
 };
 
-/**
- * @route   POST /api/objectives/bulk-delete
- * @desc    Delete multiple objectives at once
- * @access  Private (Manager/Admin)
- */
 exports.bulkDeleteObjectives = async (req, res, next) => {
     try {
         const { objectiveIds } = req.body;

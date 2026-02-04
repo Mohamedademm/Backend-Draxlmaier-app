@@ -1,18 +1,14 @@
 const rateLimit = require('express-rate-limit');
 
-/**
- * Rate limiting middleware
- * Prevents abuse by limiting number of requests per IP
- */
 const rateLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per window
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again later'
   },
-  standardHeaders: true, // Return rate limit info in headers
-  legacyHeaders: false, // Disable X-RateLimit headers
+  standardHeaders: true,
+  legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({
       status: 'error',
@@ -21,12 +17,9 @@ const rateLimiter = rateLimit({
   }
 });
 
-/**
- * Strict rate limiter for sensitive endpoints (e.g., login)
- */
 const strictRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit to 5 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: {
     status: 'error',
     message: 'Too many attempts, please try again later'

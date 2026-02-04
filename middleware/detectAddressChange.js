@@ -1,8 +1,3 @@
-/**
- * Middleware to detect address changes
- * Compares old and new address fields
- */
-
 const detectAddressChange = (oldUser, newData) => {
   const addressFields = ['address', 'city', 'postalCode'];
   

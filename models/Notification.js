@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
 
-/**
- * Notification Schema
- * Represents a system notification sent to users
- */
 const notificationSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -48,12 +44,10 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
 notificationSchema.index({ targetUsers: 1, timestamp: -1 });
 notificationSchema.index({ senderId: 1, timestamp: -1 });
 notificationSchema.index({ timestamp: -1 });
 
-// Validation: Must have at least one target user
 notificationSchema.pre('validate', function(next) {
   if (!this.targetUsers || this.targetUsers.length === 0) {
     next(new Error('Notification must have at least one target user'));
@@ -62,12 +56,10 @@ notificationSchema.pre('validate', function(next) {
   }
 });
 
-// Method to check if user has read the notification
 notificationSchema.methods.isReadBy = function(userId) {
   return this.readBy.some(id => id.toString() === userId.toString());
 };
 
-// Method to mark as read by user
 notificationSchema.methods.markAsReadBy = async function(userId) {
   if (!this.isReadBy(userId)) {
     this.readBy.push(userId);

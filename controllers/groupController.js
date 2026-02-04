@@ -1,15 +1,5 @@
 const ChatGroup = require('../models/ChatGroup');
 
-/**
- * Group Controller
- * Handles chat group operations
- */
-
-/**
- * @route   GET /api/groups
- * @desc    Get all groups for current user
- * @access  Private
- */
 exports.getAllGroups = async (req, res, next) => {
   try {
     const userId = req.user._id;
@@ -29,11 +19,6 @@ exports.getAllGroups = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/groups/:id
- * @desc    Get group by ID
- * @access  Private
- */
 exports.getGroupById = async (req, res, next) => {
   try {
     const group = await ChatGroup.findById(req.params.id)
@@ -47,7 +32,6 @@ exports.getGroupById = async (req, res, next) => {
       });
     }
 
-    // Check if user is a member
     if (!group.members.some(member => member._id.toString() === req.user._id.toString())) {
       return res.status(403).json({
         status: 'error',
@@ -64,17 +48,11 @@ exports.getGroupById = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/groups
- * @desc    Create new group
- * @access  Private
- */
 exports.createGroup = async (req, res, next) => {
   try {
     const { name, members } = req.body;
     const userId = req.user._id;
 
-    // Add creator to members if not already included
     const memberSet = new Set([...members, userId.toString()]);
 
     const group = await ChatGroup.create({
@@ -97,11 +75,6 @@ exports.createGroup = async (req, res, next) => {
   }
 };
 
-/**
- * @route   POST /api/groups/:id/members
- * @desc    Add members to group
- * @access  Private
- */
 exports.addMembers = async (req, res, next) => {
   try {
     const { members } = req.body;
@@ -115,7 +88,6 @@ exports.addMembers = async (req, res, next) => {
       });
     }
 
-    // Check if user is a member or creator
     if (!group.members.includes(req.user._id)) {
       return res.status(403).json({
         status: 'error',
@@ -123,7 +95,6 @@ exports.addMembers = async (req, res, next) => {
       });
     }
 
-    // Add new members
     const newMembers = members.filter(m => !group.members.includes(m));
     group.members.push(...newMembers);
     await group.save();
@@ -142,11 +113,6 @@ exports.addMembers = async (req, res, next) => {
   }
 };
 
-/**
- * @route   DELETE /api/groups/:id/members/:memberId
- * @desc    Remove member from group
- * @access  Private
- */
 exports.removeMember = async (req, res, next) => {
   try {
     const { id, memberId } = req.params;
@@ -160,7 +126,6 @@ exports.removeMember = async (req, res, next) => {
       });
     }
 
-    // Check if user is the creator
     if (group.createdBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         status: 'error',
@@ -168,7 +133,6 @@ exports.removeMember = async (req, res, next) => {
       });
     }
 
-    // Remove member
     group.members = group.members.filter(m => m.toString() !== memberId);
     await group.save();
 
@@ -186,16 +150,10 @@ exports.removeMember = async (req, res, next) => {
   }
 };
 
-/**
- * @route   GET /api/groups/department
- * @desc    Get or create department group for current user
- * @access  Private
- */
 exports.getDepartmentGroup = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    // Get current user to find their department
     const User = require('../models/User');
     const user = await User.findById(userId);
 

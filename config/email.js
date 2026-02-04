@@ -1,28 +1,16 @@
 const nodemailer = require('nodemailer');
 
-/**
- * Email Configuration Service
- * Handles email sending for password recovery and notifications
- */
-
-// Create transporter (Gmail configuration with explicit SMTP)
-// Create transporter (Gmail configuration with explicit SMTP)
-// Create transporter (Gmail configuration with explicit SMTP and Pooling)
-// Create transporter
-// Utilisation du service 'gmail' prédéfini qui gère automatiquement les ports/sécurité
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   },
-  // Force IPv4 pour éviter les problèmes de timeout sur Render (Cloud)
   family: 4,
   logger: true,
   debug: true
 });
 
-// Verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
     console.error('❌ Email service connection error:', error);
@@ -31,9 +19,6 @@ transporter.verify(function (error, success) {
   }
 });
 
-/**
- * Professional HTML template for password reset email
- */
 const getResetPasswordTemplate = (resetUrl, userEmail) => {
   return `
     <!DOCTYPE html>

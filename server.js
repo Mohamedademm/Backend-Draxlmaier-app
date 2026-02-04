@@ -18,81 +18,68 @@ const objectiveRoutes = require('./routes/objectiveRoutes');
 const matriculeRoutes = require('./routes/matriculeRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-// Import middleware
 const errorHandler = require('./middleware/errorHandler');
 const rateLimiter = require('./middleware/rateLimiter');
 
-// Import socket handler
 const socketHandler = require('./socket/socketHandler');
 
-// Initialize Express app
 const app = express();
 const server = http.createServer(app);
 
-// Trust proxy - CRITICAL for Render/Heroku deployment
-// This allows Express to trust the X-Forwarded-* headers from Render's proxy
+
 app.set('trust proxy', 1);
 
-// Initialize Socket.io
 const io = socketIo(server, {
   cors: {
-    origin: "*", // Allow all origins for development/testing
+    origin: "*",
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
-// Make io accessible to routes
 app.set('io', io);
 
-// Connect to MongoDB with fallback to local
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ MongoDB Atlas connected successfully');
+    console.log(' MongoDB Atlas connected successfully');
   } catch (err) {
-    console.error('❌ MongoDB Atlas connection failed:', err.message);
-    console.log('🔄 Trying local MongoDB...');
+    console.error(' MongoDB Atlas connection failed:', err.message);
+    console.log(' Trying local MongoDB...');
     try {
       await mongoose.connect('mongodb://localhost:27017/draxlmaier-app');
-      console.log('✅ Local MongoDB connected successfully');
+      console.log(' Local MongoDB connected successfully');
     } catch (localErr) {
-      console.error('❌ Local MongoDB connection failed:', localErr.message);
-      console.log('⚠️  Server running without database. Please check MongoDB connection.');
+      console.error(' Local MongoDB connection failed:', localErr.message);
+      console.log('  Server running without database. Please check MongoDB connection.');
     }
   }
 };
 
 connectDB();
 
-// Middleware
-app.use(helmet()); // Security headers
+app.use(helmet());
 
-// CORS configuration - Allow all origins to fix connection issues
 app.use(cors({
-  origin: '*', // Allow all origins
+  origin: '*', 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
-app.use(morgan('dev')); // HTTP request logger
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Servir les fichiers uploads statiquement
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Swagger Documentation
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-// Rate limiting
 app.use('/api/', rateLimiter);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -101,7 +88,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
@@ -112,7 +98,6 @@ app.use('/api/objectives', objectiveRoutes);
 app.use('/api/matricules', matriculeRoutes);
 app.use('/api', uploadRoutes);
 
-// 404 Handler
 app.use((req, res) => {
   res.status(404).json({
     status: 'error',
@@ -120,16 +105,13 @@ app.use((req, res) => {
   });
 });
 
-// Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Import logger
 const logger = require('./config/logger');
 
-// Initialize Socket.io handlers
 socketHandler(io);
 
-// Start server
+
 const PORT = process.env.PORT || 3000;
 
 server.on('error', (error) => {
@@ -147,18 +129,15 @@ server.listen(PORT, () => {
   logger.info(`✅ Server is listening on port ${PORT}`);
   logger.info(`✅ Health check: http://localhost:${PORT}/health`);
 
-  // Verify the server is actually listening
   const address = server.address();
   logger.info(`✅ Server address: ${JSON.stringify(address)}`);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Rejection:', err);
   server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception:', err);
   process.exit(1);

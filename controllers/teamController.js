@@ -3,11 +3,6 @@ const User = require('../models/User');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
-/**
- * @route   GET /api/teams
- * @desc    Get all teams
- * @access  Private
- */
 exports.getTeams = catchAsync(async (req, res, next) => {
   const { isActive, department } = req.query;
 
@@ -20,7 +15,7 @@ exports.getTeams = catchAsync(async (req, res, next) => {
   }
 
   const teams = await Team.find(filter)
-    .populate('department', 'name description') // ChatGroup has name and description
+    .populate('department', 'name description')
     .populate('leader', 'firstname lastname email role')
     .populate('members', 'firstname lastname email role')
     .sort({ createdAt: -1 });
@@ -32,11 +27,6 @@ exports.getTeams = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   GET /api/teams/:id
- * @desc    Get team by ID
- * @access  Private
- */
 exports.getTeam = catchAsync(async (req, res, next) => {
   const team = await Team.findById(req.params.id)
     .populate('department', 'name description')
@@ -53,21 +43,14 @@ exports.getTeam = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   POST /api/teams
- * @desc    Create new team
- * @access  Private (Admin, Manager)
- */
 exports.createTeam = catchAsync(async (req, res, next) => {
   const { name, description, department, leader, members, color } = req.body;
 
-  // Validate leader exists
   const leaderUser = await User.findById(leader);
   if (!leaderUser) {
     return next(new AppError('Team leader not found', 404));
   }
 
-  // Validate members exist
   if (members && members.length > 0) {
     const memberUsers = await User.find({ _id: { $in: members } });
     if (memberUsers.length !== members.length) {
@@ -93,11 +76,6 @@ exports.createTeam = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   PUT /api/teams/:id
- * @desc    Update team
- * @access  Private (Admin, Manager)
- */
 exports.updateTeam = catchAsync(async (req, res, next) => {
   const { name, description, department, leader, members, color, isActive } = req.body;
 
@@ -106,7 +84,6 @@ exports.updateTeam = catchAsync(async (req, res, next) => {
     return next(new AppError('Team not found', 404));
   }
 
-  // Update fields
   if (name) team.name = name;
   if (description !== undefined) team.description = description;
   if (department) team.department = department;
@@ -140,11 +117,6 @@ exports.updateTeam = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @route   DELETE /api/teams/:id
- * @desc    Delete team (soft delete)
- * @access  Private (Admin only)
- */
 exports.deleteTeam = catchAsync(async (req, res, next) => {
   const team = await Team.findById(req.params.id);
 

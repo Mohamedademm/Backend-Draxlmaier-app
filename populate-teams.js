@@ -5,18 +5,12 @@ const Department = require('./models/Department');
 const Team = require('./models/Team');
 const User = require('./models/User');
 
-/**
- * Script to populate database with test departments and teams
- * Run: node backend/populate-teams.js
- */
-
 const populateTeamsAndDepartments = async () => {
   try {
     console.log('🔗 Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    // Find existing users
     const admin = await User.findOne({ email: 'admin@company.com' });
     const jean = await User.findOne({ email: 'jean.dupont@company.com' });
     const sarah = await User.findOne({ email: 'sarah.martin@company.com' });
@@ -33,13 +27,11 @@ const populateTeamsAndDepartments = async () => {
     console.log(`- Manager: ${jean.firstname} ${jean.lastname}`);
     console.log(`- Employees: ${sarah.firstname}, ${marie.firstname}, ${adem.firstname}`);
 
-    // Clear existing departments and teams
     console.log('\n🗑️  Clearing existing data...');
     await Department.deleteMany({});
     await Team.deleteMany({});
     console.log('✅ Cleared existing departments and teams');
 
-    // Create Departments
     console.log('\n🏢 Creating departments...');
     
     const itDepartment = await Department.create({
@@ -78,7 +70,6 @@ const populateTeamsAndDepartments = async () => {
     });
     console.log(`✅ Created: ${salesDepartment.name}`);
 
-    // Create Teams
     console.log('\n👥 Creating teams...');
 
     const devTeam = await Team.create({
